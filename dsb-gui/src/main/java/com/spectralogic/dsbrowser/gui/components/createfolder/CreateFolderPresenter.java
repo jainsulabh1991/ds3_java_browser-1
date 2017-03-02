@@ -1,6 +1,8 @@
 package com.spectralogic.dsbrowser.gui.components.createfolder;
 
-import com.spectralogic.dsbrowser.gui.DeepStorageBrowserPresenter;
+import com.google.inject.Injector;
+import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.tasks.CreateFolderTask;
 import com.spectralogic.dsbrowser.gui.util.Ds3Alert;
@@ -35,21 +37,24 @@ public class CreateFolderPresenter implements Initializable {
     @FXML
     private Button createFolderButton, cancelCreateFolderButton;
 
-    @Inject
+    @com.google.inject.Inject
     private Workers workers;
 
     @Inject
     private CreateFolderModel createFolderModel;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
-    private DeepStorageBrowserPresenter deepStorageBrowserPresenter;
+    @com.google.inject.Inject
+    private Ds3Common ds3Common;
+
+    private Injector injector;
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
+            initInjectors();
             initGUIElements();
             folderNameField.textProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue.equals(StringConstants.EMPTY_STRING)) {
@@ -83,12 +88,12 @@ public class CreateFolderPresenter implements Initializable {
             final CreateFolderTask createFolderTask = new CreateFolderTask(createFolderModel.getClient(),
                     createFolderModel, folderNameField.textProperty().getValue(),
                     PathUtil.getDs3ObjectList(location, folderNameField.textProperty().getValue()),
-                    deepStorageBrowserPresenter);
+                    ds3Common.getDeepStorageBrowserPresenter());
             workers.execute(createFolderTask);
             //Handling task actions
             createFolderTask.setOnSucceeded(event -> {
                 this.closeDialog();
-                deepStorageBrowserPresenter.logText(folderNameField.textProperty().getValue() + StringConstants.SPACE
+                ds3Common.getDeepStorageBrowserPresenter().logText(folderNameField.textProperty().getValue() + StringConstants.SPACE
                         + resourceBundle.getString("folderCreated"), LogType.SUCCESS);
             });
             createFolderTask.setOnCancelled(event -> this.closeDialog());
@@ -98,7 +103,7 @@ public class CreateFolderPresenter implements Initializable {
             });
         } catch (final Exception e) {
             LOG.error("Failed to create folder", e);
-            deepStorageBrowserPresenter.logText(resourceBundle.getString("createFolderErr") + StringConstants.SPACE
+            ds3Common.getDeepStorageBrowserPresenter().logText(resourceBundle.getString("createFolderErr") + StringConstants.SPACE
                     + folderNameField.textProperty().getValue().trim() + StringConstants.SPACE
                     + resourceBundle.getString("txtReason") + StringConstants.SPACE + e, LogType.ERROR);
             Ds3Alert.show(resourceBundle.getString("createFolderErrAlert"), resourceBundle.getString("createFolderErrLogs"), Alert.AlertType.ERROR);
@@ -113,5 +118,17 @@ public class CreateFolderPresenter implements Initializable {
     private void closeDialog() {
         final Stage popupStage = (Stage) folderNameField.getScene().getWindow();
         popupStage.close();
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+
+        ds3Common = injector.getInstance(Ds3Common.class);
+
+
+
     }
 }

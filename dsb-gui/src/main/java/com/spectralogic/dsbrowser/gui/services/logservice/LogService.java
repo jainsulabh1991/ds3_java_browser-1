@@ -20,9 +20,11 @@ public class LogService {
 
     private final static org.slf4j.Logger LOG = LoggerFactory.getLogger(LogService.class);
 
+    @com.google.inject.Inject
     private LogSettings logSettings;
     private final String pattern = "%date %level [%thread] %logger{10} [%file:%line] %msg%n";
 
+    @com.google.inject.Inject
     public LogService(final LogSettings logSettings) {
         this.logSettings = logSettings;
         updateLogBackSettings(pattern);

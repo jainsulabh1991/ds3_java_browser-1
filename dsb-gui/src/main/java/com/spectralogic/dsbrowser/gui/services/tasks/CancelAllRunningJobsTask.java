@@ -56,7 +56,9 @@ public class CancelAllRunningJobsTask extends Task {
                     }
                     ParseJobInterruptionMap.removeJobID(jobInterruptionStore, jobId, ds3Client.getConnectionDetails()
                             .getEndpoint(), null);
-                    ds3Client.cancelJobSpectraS3(new CancelJobSpectraS3Request(jobId));
+                    if(job.getProgress() != 1) {
+                        ds3Client.cancelJobSpectraS3(new CancelJobSpectraS3Request(jobId));
+                    }
                 } catch (final Exception e1) {
                     LOG.error("Failed to cancel job", e1);
                 }

@@ -2,7 +2,6 @@ package com.spectralogic.dsbrowser.gui.components.license;
 
 import com.google.common.collect.ImmutableList;
 import com.spectralogic.dsbrowser.gui.util.Constants;
-import com.spectralogic.dsbrowser.gui.util.StringConstants;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

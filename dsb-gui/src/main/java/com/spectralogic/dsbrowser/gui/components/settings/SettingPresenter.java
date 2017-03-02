@@ -1,6 +1,8 @@
 package com.spectralogic.dsbrowser.gui.components.settings;
 
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.models.Priority;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.jobprioritystore.JobSettings;
 import com.spectralogic.dsbrowser.gui.services.jobprioritystore.SavedJobPrioritiesStore;
@@ -17,7 +19,6 @@ import javafx.util.converter.NumberStringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -102,19 +103,19 @@ public class SettingPresenter implements Initializable {
     @FXML
     private CheckBox filePropertiesCheckbox, showCachedJobCheckbox;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
+    @com.google.inject.Inject
     private JobWorkers jobWorkers;
 
-    @Inject
+    @com.google.inject.Inject
     private SavedJobPrioritiesStore jobPrioritiesStore;
 
-    @Inject
+    @com.google.inject.Inject
     private SettingsStore settings;
 
-    @Inject
+    @com.google.inject.Inject
     private LogService logService;
 
     private JobSettings jobSettings;
@@ -126,6 +127,7 @@ public class SettingPresenter implements Initializable {
     private LogSettings logSettings;
 
     private ProcessSettings processSettings;
+    private Injector injector;
 
     public SettingPresenter() {
     }
@@ -133,11 +135,14 @@ public class SettingPresenter implements Initializable {
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
+            initInjectors();
+
             this.logSettings = settings.getLogSettings();
             this.processSettings = settings.getProcessSettings();
             this.jobSettings = jobPrioritiesStore.getJobSettings();
             this.filePropertiesSettings = settings.getFilePropertiesSettings();
             this.showCachedJobSettings = settings.getShowCachedJobSettings();
+
             initGUIElements();
             initPropertyPane();
         } catch (final Exception e) {
@@ -248,5 +253,14 @@ public class SettingPresenter implements Initializable {
         if (selectedDirectory != null) {
             this.logSettings.setLogLocation(selectedDirectory.getAbsolutePath());
         }
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        jobWorkers = injector.getInstance(JobWorkers.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        jobPrioritiesStore = injector.getInstance(SavedJobPrioritiesStore.class);
+        logService = injector.getInstance(LogService.class);
+        settings = injector.getInstance(SettingsStore.class);
     }
 }

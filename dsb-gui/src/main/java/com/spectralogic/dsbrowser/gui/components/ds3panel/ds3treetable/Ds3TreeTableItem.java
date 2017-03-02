@@ -12,10 +12,6 @@ import javafx.scene.Node;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.image.ImageView;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ResourceBundle;
 
 
 public class Ds3TreeTableItem extends TreeItem<Ds3TreeTableValue> {

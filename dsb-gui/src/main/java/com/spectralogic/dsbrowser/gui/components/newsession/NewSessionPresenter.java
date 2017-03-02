@@ -1,6 +1,8 @@
 package com.spectralogic.dsbrowser.gui.components.newsession;
 
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.utils.Guard;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.newSessionService.SessionModelService;
 import com.spectralogic.dsbrowser.gui.services.newSessionService.NewSessionModelValidation;
 import com.spectralogic.dsbrowser.gui.services.savedSessionStore.SavedSession;
@@ -23,7 +25,6 @@ import org.controlsfx.control.PropertySheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -42,16 +43,16 @@ public class NewSessionPresenter implements Initializable {
     @FXML
     private TableView<SavedSession> savedSessions;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3SessionStore store;
 
-    @Inject
+    @com.google.inject.Inject
     private SavedSessionStore savedSessionStore;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
+    @com.google.inject.Inject
     private CreateConnectionTask createConnectionTask;
 
     @FXML
@@ -62,11 +63,13 @@ public class NewSessionPresenter implements Initializable {
 
     @FXML
     private Tooltip saveSessionButtonTooltip, openSessionButtonTooltip, cancelSessionButtonTooltip, deleteSessionButtonTooltip;
+    private Injector injector;
 
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
+            initInjectors();
             initGUIElement();
             initSessionList();
             initPropertySheet();
@@ -87,6 +90,14 @@ public class NewSessionPresenter implements Initializable {
         openSessionButtonTooltip.setText(resourceBundle.getString("openSessionButtonTooltip"));
         deleteSessionButtonTooltip.setText(resourceBundle.getString("deleteSessionTooltip"));
 
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        store = injector.getInstance(Ds3SessionStore.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        savedSessionStore = injector.getInstance(SavedSessionStore.class);
+        createConnectionTask = injector.getInstance(CreateConnectionTask.class);
     }
 
     private void initSessionList() {

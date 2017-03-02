@@ -1,9 +1,6 @@
 package com.spectralogic.dsbrowser.gui.util;
 
 import com.spectralogic.ds3client.models.JobRequestType;
-import com.spectralogic.dsbrowser.gui.components.newsession.NewSessionPresenter;
-import com.spectralogic.dsbrowser.gui.services.JobWorkers;
-import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.FilesAndFolderMap;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.JobIdsModel;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.JobInterruptionStore;

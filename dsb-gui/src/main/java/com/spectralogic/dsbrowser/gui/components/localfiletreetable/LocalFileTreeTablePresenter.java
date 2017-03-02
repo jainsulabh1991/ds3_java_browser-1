@@ -1,6 +1,7 @@
 package com.spectralogic.dsbrowser.gui.components.localfiletreetable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.Ds3Client;
 import com.spectralogic.ds3client.commands.spectrads3.CancelJobSpectraS3Request;
 import com.spectralogic.ds3client.models.JobRequestType;
@@ -11,6 +12,8 @@ import com.spectralogic.dsbrowser.gui.components.ds3panel.ds3treetable.Ds3TreeTa
 import com.spectralogic.dsbrowser.gui.components.ds3panel.ds3treetable.Ds3TreeTableValue;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.ds3treetable.Ds3TreeTableValueCustom;
 import com.spectralogic.dsbrowser.gui.components.interruptedjobwindow.EndpointInfo;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
+import com.spectralogic.dsbrowser.gui.injectors.Presenter;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.ds3Panel.SortPolicyCallback;
@@ -37,7 +40,6 @@ import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -49,8 +51,7 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.spectralogic.dsbrowser.gui.util.StringConstants;
-
+@Presenter
 public class LocalFileTreeTablePresenter implements Initializable {
 
     private final static Logger LOG = LoggerFactory.getLogger(LocalFileTreeTablePresenter.class);
@@ -70,47 +71,50 @@ public class LocalFileTreeTablePresenter implements Initializable {
     @FXML
     private Label localPathIndicator;
 
-    @Inject
+    @com.google.inject.Inject
     private FileTreeTableProvider provider;
 
-    @Inject
+    @com.google.inject.Inject
     private DataFormat dataFormat;
 
-    @Inject
+    @com.google.inject.Inject
     private Workers workers;
 
-    @Inject
+    @com.google.inject.Inject
     private JobWorkers jobWorkers;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3SessionStore store;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
+    @com.google.inject.Inject
     private SavedJobPrioritiesStore savedJobPrioritiesStore;
 
-    @Inject
+    @com.google.inject.Inject
     private JobInterruptionStore jobInterruptionStore;
 
-    @Inject
+    @com.google.inject.Inject
     private SettingsStore settingsStore;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3Common ds3Common;
 
-    @Inject
+    @com.google.inject.Inject
     private EndpointInfo endpointInfo;
 
     private String fileRootItem = StringConstants.ROOT_LOCATION;
 
     private TreeItem<FileTreeModel> lastExpandedNode;
 
+    private Injector injector;
+
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
             LOG.info("Starting LocalFileTreeTablePresenter");
+            initInjectors();
             initToolTips();
             initTableView();
             initListeners();
@@ -565,5 +569,17 @@ public class LocalFileTreeTablePresenter implements Initializable {
             }
         }
         return localPath;
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+        jobWorkers = injector.getInstance(JobWorkers.class);
+        provider = injector.getInstance(FileTreeTableProvider.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        savedJobPrioritiesStore = injector.getInstance(SavedJobPrioritiesStore.class);
+        jobInterruptionStore = injector.getInstance(JobInterruptionStore.class);
+        ds3Common = injector.getInstance(Ds3Common.class);
+        settingsStore = injector.getInstance(SettingsStore.class);
     }
 }

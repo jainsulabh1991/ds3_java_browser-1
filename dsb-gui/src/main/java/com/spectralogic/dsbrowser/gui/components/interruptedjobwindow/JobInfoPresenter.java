@@ -1,8 +1,10 @@
 package com.spectralogic.dsbrowser.gui.components.interruptedjobwindow;
 
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.commands.spectrads3.CancelJobSpectraS3Request;
 import com.spectralogic.dsbrowser.gui.Main;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.FilesAndFolderMap;
@@ -48,31 +50,34 @@ public class JobInfoPresenter implements Initializable {
     @FXML
     private TreeTableColumn jobIdColumn;
 
-    @Inject
+    @com.google.inject.Inject
     private Workers workers;
 
-    @Inject
+    @com.google.inject.Inject
     private JobWorkers jobWorkers;
 
     @Inject
     private EndpointInfo endpointInfo;
 
-    @Inject
+    @com.google.inject.Inject
     private JobInterruptionStore jobInterruptionStore;
 
-    @Inject
+    @com.google.inject.Inject
     private SettingsStore settingsStore;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3Common ds3Common;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
     private Stage stage;
 
+    private Injector injector;
+
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
+        initInjectors();
         initListeners();
         initTreeTableView();
     }
@@ -280,4 +285,16 @@ public class JobInfoPresenter implements Initializable {
             treeTableView.setPlaceholder(new Label(resourceBundle.getString("dontHaveInterruptedJobs")));
         });
     }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+        jobWorkers = injector.getInstance(JobWorkers.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        jobInterruptionStore = injector.getInstance(JobInterruptionStore.class);
+        ds3Common = injector.getInstance(Ds3Common.class);
+        settingsStore = injector.getInstance(SettingsStore.class);
+    }
+
+
 }

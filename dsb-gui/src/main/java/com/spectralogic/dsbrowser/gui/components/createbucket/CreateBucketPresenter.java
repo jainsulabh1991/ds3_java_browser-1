@@ -1,19 +1,18 @@
 package com.spectralogic.dsbrowser.gui.components.createbucket;
 
+import com.google.inject.Injector;
 import com.spectralogic.dsbrowser.gui.DeepStorageBrowserPresenter;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
-import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3PanelPresenter;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.tasks.CreateBucketTask;
 import com.spectralogic.dsbrowser.gui.util.Ds3Alert;
-import com.spectralogic.dsbrowser.gui.util.ImageURLs;
 import com.spectralogic.dsbrowser.gui.util.LogType;
 import com.spectralogic.dsbrowser.gui.util.RefreshCompleteViewWorker;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,27 +38,28 @@ public class CreateBucketPresenter implements Initializable {
     @FXML
     private Button createBucketButton;
 
-    @Inject
+    @com.google.inject.Inject
     private Workers workers;
 
     @Inject
     private CreateBucketWithDataPoliciesModel createBucketWithDataPoliciesModel;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
+
     private DeepStorageBrowserPresenter deepStorageBrowserPresenter;
 
-    @Inject
-    private Ds3PanelPresenter ds3PanelPresenter;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3Common ds3Common;
+
+    private Injector injector;
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         LOG.info("Initializing Create Bucket form");
+        initInjectors();
         initGUIElements();
         //noinspection unchecked
         dataPolicyCombo.getItems().addAll(createBucketWithDataPoliciesModel.getDataPolicies().stream().map(CreateBucketModel::getDataPolicy).collect(Collectors.toList()));
@@ -128,5 +128,17 @@ public class CreateBucketPresenter implements Initializable {
     private void closeDialog() {
         final Stage popupStage = (Stage) bucketNameField.getScene().getWindow();
         popupStage.close();
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+
+        ds3Common = injector.getInstance(Ds3Common.class);
+
+        deepStorageBrowserPresenter = ds3Common.getDeepStorageBrowserPresenter();
+
     }
 }

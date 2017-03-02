@@ -1,8 +1,10 @@
 package com.spectralogic.dsbrowser.gui.components.deletefiles;
 
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.utils.Guard;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.ds3treetable.Ds3TreeTableValue;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.ds3Panel.DeleteService;
 import com.spectralogic.dsbrowser.gui.services.tasks.Ds3DeleteBucketTask;
@@ -39,21 +41,24 @@ public class DeleteItemPresenter implements Initializable {
     @FXML
     private Label deleteLabel, deleteConfirmationInfoLabel;
 
-    @Inject
+    @com.google.inject.Inject
     private Workers workers;
 
     @Inject
     private Ds3Task deleteTask;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3Common ds3Common;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
+
+    private Injector injector;
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
+            initInjectors();
             deleteButton.setDisable(true);
             ObservableList<TreeItem<Ds3TreeTableValue>> selectedItems = null;
             if (ds3Common.getDs3TreeTableView() != null) {
@@ -152,5 +157,17 @@ public class DeleteItemPresenter implements Initializable {
         } else {
             LOG.error("Success to delete selected item(s):{} ", message);
         }
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+
+        ds3Common = injector.getInstance(Ds3Common.class);
+
+
+
     }
 }

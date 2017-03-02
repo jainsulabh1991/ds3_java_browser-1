@@ -1,11 +1,13 @@
 package com.spectralogic.dsbrowser.gui.components.ds3panel.ds3treetable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.commands.spectrads3.CancelJobSpectraS3Request;
 import com.spectralogic.ds3client.utils.Guard;
 import com.spectralogic.dsbrowser.gui.DeepStorageBrowserPresenter;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3PanelPresenter;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.ds3Panel.CreateService;
@@ -37,13 +39,13 @@ import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 public class Ds3TreeTablePresenter implements Initializable {
@@ -51,53 +53,43 @@ public class Ds3TreeTablePresenter implements Initializable {
     private final static Logger LOG = LoggerFactory.getLogger(Ds3TreeTablePresenter.class);
 
     private final List<String> rowNameList = new ArrayList<>();
-
     @FXML
     public TreeTableView<Ds3TreeTableValue> ds3TreeTable;
-
     @FXML
     public TreeTableColumn<Ds3TreeTableValue, String> fileName;
-
     @FXML
     public TreeTableColumn<Ds3TreeTableValue, Ds3TreeTableValue.Type> fileType;
-
     @FXML
     private TreeTableColumn<Ds3TreeTableValue, Number> sizeColumn;
-
     @FXML
     private TreeTableColumn fullPath;
-
-    @Inject
+    @com.google.inject.Inject
     private Workers workers;
-
-    @Inject
+    @com.google.inject.Inject
     private JobWorkers jobWorkers;
-
-    @Inject
+    @com.google.inject.Inject
     private Session session;
-
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
-
-    @Inject
+    @com.google.inject.Inject
     private Ds3PanelPresenter ds3PanelPresenter;
 
-    @Inject
+    @com.google.inject.Inject
     private DataFormat dataFormat;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3Common ds3Common;
 
-    @Inject
+    @com.google.inject.Inject
     private SavedJobPrioritiesStore savedJobPrioritiesStore;
 
-    @Inject
+    @com.google.inject.Inject
     private JobInterruptionStore jobInterruptionStore;
 
-    @Inject
+    @com.google.inject.Inject
     private SettingsStore settingsStore;
 
-    @Inject
+    @com.google.inject.Inject
     private DeepStorageBrowserPresenter deepStorageBrowserPresenter;
 
     private ContextMenu contextMenu;
@@ -108,10 +100,14 @@ public class Ds3TreeTablePresenter implements Initializable {
 
     private boolean isFirstTime = true;
 
+    private Injector injector;
+
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
-            deepStorageBrowserPresenter.logText("Loading Session " + session.getSessionName(), LogType.INFO);
+            initInjectors();
+            deepStorageBrowserPresenter = ds3Common.getDeepStorageBrowserPresenter();
+            ds3PanelPresenter = ds3Common.getDs3PanelPresenter();
             initContextMenu();
             initTreeTableView();
             setTreeTableViewBehaviour();
@@ -211,6 +207,9 @@ public class Ds3TreeTablePresenter implements Initializable {
                 ds3PanelPresenter.disableSearch(true);
             }
         });
+
+        session = ds3Common.getCurrentSession();
+        deepStorageBrowserPresenter.logText("Loading Session " + session.getSessionName(), LogType.INFO);
 
         final GetServiceTask getServiceTask = new GetServiceTask(rootTreeItem.getChildren(), session, workers, ds3Common);
         workers.execute(getServiceTask);
@@ -659,6 +658,20 @@ public class Ds3TreeTablePresenter implements Initializable {
             db.setContent(content);
         }
         event.consume();
+    }
+
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+        jobWorkers = injector.getInstance(JobWorkers.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        savedJobPrioritiesStore = injector.getInstance(SavedJobPrioritiesStore.class);
+        jobInterruptionStore = injector.getInstance(JobInterruptionStore.class);
+        ds3Common = injector.getInstance(Ds3Common.class);
+        settingsStore = injector.getInstance(SettingsStore.class);
+        session = injector.getInstance(Session.class);
+        dataFormat = injector.getInstance(DataFormat.class);
     }
 
 }

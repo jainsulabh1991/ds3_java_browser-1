@@ -1,6 +1,7 @@
 package com.spectralogic.dsbrowser.gui.components.ds3panel;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.commands.spectrads3.CancelJobSpectraS3Request;
 import com.spectralogic.ds3client.utils.Guard;
 import com.spectralogic.dsbrowser.gui.DeepStorageBrowserPresenter;
@@ -10,6 +11,8 @@ import com.spectralogic.dsbrowser.gui.components.localfiletreetable.FileTreeTabl
 import com.spectralogic.dsbrowser.gui.components.modifyjobpriority.ModifyJobPriorityModel;
 import com.spectralogic.dsbrowser.gui.components.modifyjobpriority.ModifyJobPriorityPopUp;
 import com.spectralogic.dsbrowser.gui.components.newsession.NewSessionView;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
+import com.spectralogic.dsbrowser.gui.injectors.Presenter;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.ds3Panel.CreateService;
@@ -53,6 +56,7 @@ import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+@Presenter
 public class Ds3PanelPresenter implements Initializable {
 
     private final static Logger LOG = LoggerFactory.getLogger(Ds3PanelPresenter.class);
@@ -96,47 +100,42 @@ public class Ds3PanelPresenter implements Initializable {
     @FXML
     private Ds3TreeTablePresenter ds3TreeTablePresenter;
 
-    @Inject
+    
     private Ds3SessionStore store;
 
-    @Inject
+    
     private Workers workers;
 
-    @Inject
+    
     private JobWorkers jobWorkers;
 
-    @Inject
+    
     private ResourceBundle resourceBundle;
 
-    @Inject
+    
     private SavedJobPrioritiesStore savedJobPrioritiesStore;
 
-    @Inject
+    
     private JobInterruptionStore jobInterruptionStore;
 
-    @Inject
+    
     private SettingsStore settingsStore;
 
-    @Inject
     private DeepStorageBrowserPresenter deepStorageBrowserPresenter;
 
-    @Inject
+    
     private FileTreeTableProvider provider;
 
-    @Inject
+    
     private DataFormat dataFormat;
 
-    @Inject
+    
     private Ds3Common ds3Common;
 
-    @Inject
+    
     private SavedSessionStore savedSessionStore;
 
     private GetNoOfItemsTask itemsTask;
-
-    public Ds3PanelPresenter() {
-        super();
-    }
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
@@ -144,13 +143,15 @@ public class Ds3PanelPresenter implements Initializable {
             LOG.info("Loading Ds3PanelPresenter");
             ds3PathIndicator = makeSelectable(ds3PathIndicator);
             ds3PathIndicator.setTooltip(null);
+            initInjectors();
+            deepStorageBrowserPresenter = ds3Common.getDeepStorageBrowserPresenter();
             initMenuItems();
             initButtons();
             initTab();
             initTabPane();
             initListeners();
+
             ds3Common.setDs3PanelPresenter(this);
-            ds3Common.setDeepStorageBrowserPresenter(deepStorageBrowserPresenter);
             final BackgroundTask backgroundTask = new BackgroundTask(ds3Common, workers);
             workers.execute(backgroundTask);
             try {
@@ -305,6 +306,7 @@ public class Ds3PanelPresenter implements Initializable {
     }
 
     private void createTabAndSetBehaviour(final Session newSession) {
+        ds3Common.setCurrentSession(newSession);
         addNewTab.setTooltip(new Tooltip(resourceBundle.getString("newSessionToolTip")));
         final Ds3TreeTableView newTreeView = new Ds3TreeTableView(newSession, deepStorageBrowserPresenter, this, ds3Common);
         final Tab treeTab = new Tab(newSession.getSessionName() + StringConstants.SESSION_SEPARATOR
@@ -742,6 +744,19 @@ public class Ds3PanelPresenter implements Initializable {
         return paneItems;
     }
 
+    private void initInjectors() {
+        Injector injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+        jobWorkers = injector.getInstance(JobWorkers.class);
+        provider = injector.getInstance(FileTreeTableProvider.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        savedJobPrioritiesStore = injector.getInstance(SavedJobPrioritiesStore.class);
+        jobInterruptionStore = injector.getInstance(JobInterruptionStore.class);
+        ds3Common = injector.getInstance(Ds3Common.class);
+        settingsStore = injector.getInstance(SettingsStore.class);
+        store = injector.getInstance(Ds3SessionStore.class);
+        savedSessionStore = injector.getInstance(SavedSessionStore.class);
+    }
 
 }
 

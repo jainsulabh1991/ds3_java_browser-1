@@ -1,7 +1,9 @@
 package com.spectralogic.dsbrowser.gui.components.modifyjobpriority;
 
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.models.Priority;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.tasks.ModifyJobPriorityTask;
 import com.spectralogic.dsbrowser.gui.util.LogType;
@@ -33,20 +35,23 @@ public class ModifyJobPriorityPresenter implements Initializable {
     @FXML
     private Button yesButton, noButton;
 
-    @Inject
+    @com.google.inject.Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
+    @com.google.inject.Inject
     private Workers worker;
 
     @Inject
     private ModifyJobPriorityModel value;
 
-    @Inject
+    @com.google.inject.Inject
     private Ds3Common ds3Common;
+
+    private Injector injector;
 
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
+        initInjectors();
         initGUIElement();
     }
 
@@ -93,5 +98,15 @@ public class ModifyJobPriorityPresenter implements Initializable {
             ds3Common.getDeepStorageBrowserPresenter().logText(
                     resourceBundle.getString("priorityModified"), LogType.INFO);
         }
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        worker = injector.getInstance(Workers.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        ds3Common = injector.getInstance(Ds3Common.class);
+
+
+
     }
 }

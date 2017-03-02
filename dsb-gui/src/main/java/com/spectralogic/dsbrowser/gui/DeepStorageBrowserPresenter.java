@@ -1,6 +1,6 @@
 package com.spectralogic.dsbrowser.gui;
 
-import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import com.spectralogic.ds3client.utils.Guard;
 import com.spectralogic.dsbrowser.gui.components.about.AboutView;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
@@ -11,6 +11,8 @@ import com.spectralogic.dsbrowser.gui.components.interruptedjobwindow.JobInfoVie
 import com.spectralogic.dsbrowser.gui.components.localfiletreetable.LocalFileTreeTableView;
 import com.spectralogic.dsbrowser.gui.components.newsession.NewSessionView;
 import com.spectralogic.dsbrowser.gui.components.settings.SettingsView;
+import com.spectralogic.dsbrowser.gui.injectors.GuicePresenterInjector;
+import com.spectralogic.dsbrowser.gui.injectors.Presenter;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.FilesAndFolderMap;
@@ -47,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
+@Presenter
 public class DeepStorageBrowserPresenter implements Initializable {
 
     private final static Logger LOG = LoggerFactory.getLogger(DeepStorageBrowserPresenter.class);
@@ -56,6 +59,7 @@ public class DeepStorageBrowserPresenter implements Initializable {
     private final Label lblCount = new Label();
     private final Button jobButton = new Button();
     private final Circle circle = new Circle();
+    private Injector injector;
 
     @FXML
     private AnchorPane fileSystem, blackPearl;
@@ -87,37 +91,36 @@ public class DeepStorageBrowserPresenter implements Initializable {
     @FXML
     private BorderPane borderPane;
 
-    @Inject
     private JobWorkers jobWorkers;
 
-    @Inject
     private ResourceBundle resourceBundle;
 
-    @Inject
     private SavedJobPrioritiesStore savedJobPrioritiesStore;
 
-    @Inject
     private Ds3Common ds3Common;
 
-    @Inject
     private JobInterruptionStore jobInterruptionStore;
 
-    @Inject
     private SettingsStore settingsStore;
 
-    @Inject
     private SavedSessionStore savedSessionStore;
 
-    @Inject
     private Workers workers;
 
     private DeepStorageBrowserTaskProgressView<Ds3JobTask> jobProgressView;
 
+    @Inject
+    public DeepStorageBrowserPresenter(final SavedSessionStore savedSessionStore) {
+        this.savedSessionStore = savedSessionStore;
+    }
+
     @Override
     public void initialize(final URL location, final ResourceBundle resources) {
         try {
+            initInjectors();
             initGUIElement(); //Setting up labels from resource file
             LOG.info("Loading Main view");
+            ds3Common.setDeepStorageBrowserPresenter(this);
             logText(resourceBundle.getString("loadMainView"), LogType.INFO);
             final SetToolTipBehavior setToolTipBehavior = new SetToolTipBehavior();
             setToolTipBehavior.setToolTilBehaviors(Constants.OPEN_DELAY, Constants.DURATION, Constants.CLOSE_DELAY); //To set the time interval of tooltip
@@ -211,8 +214,11 @@ public class DeepStorageBrowserPresenter implements Initializable {
                 final CloseConfirmationHandler closeConfirmationHandler = new CloseConfirmationHandler(PrimaryStageModel.getInstance().getPrimaryStage(), savedSessionStore, savedJobPrioritiesStore, jobInterruptionStore, settingsStore, jobWorkers, workers);
                 closeConfirmationHandler.closeConfirmationAlert(event);
             });
-            final LocalFileTreeTableView localTreeView = new LocalFileTreeTableView(this);
-            final Ds3PanelView ds3PanelView = new Ds3PanelView(this);
+
+            final LocalFileTreeTableView localTreeView = new LocalFileTreeTableView();
+            final Ds3PanelView ds3PanelView = new Ds3PanelView();
+//            fileSystem.getChildren().add(localTreeView.getView());
+//            blackPearl.getChildren().add(ds3PanelView.getView());
             localTreeView.getViewAsync(fileSystem.getChildren()::add);
             ds3PanelView.getViewAsync(blackPearl.getChildren()::add);
 
@@ -220,6 +226,18 @@ public class DeepStorageBrowserPresenter implements Initializable {
             LOG.error("Encountered an error when creating Main view", e);
             logText(resourceBundle.getString("errorWhileCreatingMainView"), LogType.ERROR);
         }
+    }
+
+    private void initInjectors() {
+        injector = GuicePresenterInjector.injector;
+        workers = injector.getInstance(Workers.class);
+        jobWorkers = injector.getInstance(JobWorkers.class);
+        resourceBundle = injector.getInstance(ResourceBundle.class);
+        savedJobPrioritiesStore = injector.getInstance(SavedJobPrioritiesStore.class);
+        savedSessionStore = injector.getInstance(SavedSessionStore.class);
+        jobInterruptionStore = injector.getInstance(JobInterruptionStore.class);
+        ds3Common = injector.getInstance(Ds3Common.class);
+        settingsStore = injector.getInstance(SettingsStore.class);
     }
 
     private void initGUIElement() {
