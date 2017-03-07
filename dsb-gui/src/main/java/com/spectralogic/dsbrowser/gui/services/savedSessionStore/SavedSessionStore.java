@@ -153,7 +153,10 @@ public class SavedSessionStore {
                 if (first.isPresent()) {
                     final SavedSession savedSession = first.get();
                     Platform.runLater(() -> {
-                        store.addSession(createConnectionTask.createConnection(SessionModelService.setSessionModel(savedSession, true)));
+                        final Session session = createConnectionTask.createConnection(SessionModelService.setSessionModel(savedSession, true));
+                        if (null != session) {
+                            store.addSession(session);
+                        }
                     });
                 }
             }
