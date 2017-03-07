@@ -79,15 +79,15 @@ public class RecoverInterruptedJobTest {
                             deepStorageBrowserPresenter,
                             ds3Common
                     );
-                    if(jobIdKeyElement.isPresent()) {
+                    if (jobIdKeyElement.isPresent()) {
                         final String jobIdKey = jobIdKeyElement.get();
                         final DeepStorageBrowserTaskProgressView<Ds3JobTask> taskProgressView = new DeepStorageBrowserTaskProgressView<>();
                         Mockito.when(deepStorageBrowserPresenter.getJobProgressView()).thenReturn(taskProgressView);
                         Mockito.when(ds3Common.getDeepStorageBrowserPresenter().getJobProgressView()).thenReturn(taskProgressView);
-                        recoverInterruptedJob = new RecoverInterruptedJob(UUID.fromString(jobIdKey), endPointInfo, jobInterruptionStore, false);
+                        recoverInterruptedJob = new RecoverInterruptedJob(UUID.fromString(jobIdKey), endPointInfo,
+                                jobInterruptionStore, false, null, null);
                         taskProgressView.getTasks().add(recoverInterruptedJob);
-                    }
-                    else {
+                    } else {
                         LOG.info("No job available to recover");
                     }
                 } else {
@@ -131,14 +131,13 @@ public class RecoverInterruptedJobTest {
         final CountDownLatch latch = new CountDownLatch(1);
         Platform.runLater(() -> {
             try {
-                if(recoverInterruptedJob != null) {
+                if (recoverInterruptedJob != null) {
                     final String skipPath = recoverInterruptedJob.getSkipPath(fileName, new HashMap<>());
                     if (skipPath.equals(EMPTY_STRING)) {
                         successFlag = true;
                         latch.countDown();
                     }
-                }
-                else {
+                } else {
                     LOG.info("No job found to recover");
                     latch.countDown();
                 }

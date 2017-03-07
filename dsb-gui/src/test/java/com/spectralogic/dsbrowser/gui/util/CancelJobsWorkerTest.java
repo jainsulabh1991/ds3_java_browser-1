@@ -5,7 +5,6 @@ import com.spectralogic.ds3client.models.JobRequestType;
 import com.spectralogic.ds3client.models.Priority;
 import com.spectralogic.dsbrowser.gui.DeepStorageBrowserPresenter;
 import com.spectralogic.dsbrowser.gui.components.ds3panel.Ds3Common;
-import com.spectralogic.dsbrowser.gui.components.newsession.NewSessionPresenter;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.Workers;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.FilesAndFolderMap;
@@ -20,6 +19,7 @@ import com.spectralogic.dsbrowser.gui.services.tasks.CancelAllRunningJobsTask;
 import com.spectralogic.dsbrowser.gui.services.tasks.CancelAllTaskBySession;
 import com.spectralogic.dsbrowser.gui.services.tasks.CreateConnectionTask;
 import com.spectralogic.dsbrowser.gui.services.tasks.Ds3PutJob;
+import com.spectralogic.dsbrowser.util.GuavaCollectors;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import org.junit.BeforeClass;
@@ -70,9 +70,9 @@ public class CancelJobsWorkerTest {
                 jobIdMap.put(jobId.toString(), filesAndFolderMap);
                 final Map<String, Map<String, FilesAndFolderMap>> endPointMap = new HashMap<>();
                 endPointMap.put(session.getEndpoint() + ":" + session.getPortNo(), jobIdMap);
-                final ArrayList<Map<String, Map<String, FilesAndFolderMap>>> endpointMapList = new ArrayList<>();
+                final List<Map<String, Map<String, FilesAndFolderMap>>> endpointMapList = new ArrayList<>();
                 endpointMapList.add(endPointMap);
-                final JobIdsModel jobIdsModel = new JobIdsModel(endpointMapList);
+                final JobIdsModel jobIdsModel = new JobIdsModel(endpointMapList.stream().collect(GuavaCollectors.immutableList()));
                 final JobInterruptionStore jobInterruptionStore1 = new JobInterruptionStore(jobIdsModel);
                 jobInterruptionStore1.saveJobInterruptionStore(jobInterruptionStore1);
                 jobInterruptionStore = JobInterruptionStore.loadJobIds();
@@ -96,11 +96,10 @@ public class CancelJobsWorkerTest {
                 final Ds3Common ds3Common = new Ds3Common();
                 ds3Common.setDeepStorageBrowserPresenter(deepStorageBrowserPresenter);
 
-
                 //Initiating a put job which to be cancelled
                 final SettingsStore settingsStore = SettingsStore.loadSettingsStore();
                 final Ds3PutJob ds3PutJob = new Ds3PutJob(ds3Client, filesList, SessionConstants.ALREADY_EXIST_BUCKET, StringConstants.EMPTY_STRING,
-                         Priority.URGENT.toString(), 5,
+                        Priority.URGENT.toString(), 5,
                         JobInterruptionStore.loadJobIds(), ds3Common, settingsStore);
                 //Starting put job task
                 jobWorkers.execute(ds3PutJob);

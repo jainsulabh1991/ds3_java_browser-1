@@ -216,7 +216,6 @@ public class Ds3PanelPresenter implements Initializable {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void initListeners() {
         ds3DeleteButton.setOnAction(event -> ds3DeleteObject(true));
         ds3Refresh.setOnAction(event -> RefreshCompleteViewWorker.refreshCompleteTreeTableView(ds3Common, workers));
@@ -246,12 +245,22 @@ public class Ds3PanelPresenter implements Initializable {
 
                             if (first.isPresent()) {
                                 final TreeTableView<Ds3TreeTableValue> ds3TreeTableView = (TreeTableView<Ds3TreeTableValue>) first.get();
-                                final ImmutableList<TreeItem<Ds3TreeTableValue>> values = ds3TreeTableView.getSelectionModel().getSelectedItems()
+
+                                ObservableList<TreeItem<Ds3TreeTableValue>> selectedItems = ds3TreeTableView.getSelectionModel().getSelectedItems();
+                                final TreeItem<Ds3TreeTableValue> root = ds3TreeTableView.getRoot();
+                                if (Guard.isNullOrEmpty(selectedItems) && null != root && null != root.getValue()) {
+                                    selectedItems = FXCollections.observableArrayList();
+                                    selectedItems.add(ds3TreeTableView.getRoot());
+                                }
+
+                                final ImmutableList<TreeItem<Ds3TreeTableValue>> values = selectedItems
                                         .stream().collect(GuavaCollectors.immutableList());
+
                                 ds3Common.setDs3TreeTableView(ds3TreeTableView);
                                 ds3Common.setCurrentTabPane(ds3SessionTabPane);
 
-                                final String info = StringBuilderUtil.getPaneItemsString(ds3TreeTableView.getExpandedItemCount(), ds3TreeTableView.getSelectionModel().getSelectedItems().size()).toString();
+                                final String info = StringBuilderUtil.getPaneItemsString(
+                                        ds3TreeTableView.getExpandedItemCount(), selectedItems.size()).toString();
                                 if (Guard.isNullOrEmpty(values)) {
                                     setBlank(true);
                                 } else {
@@ -590,7 +599,6 @@ public class Ds3PanelPresenter implements Initializable {
     }
 
 
-    @SuppressWarnings("unchecked")
     private TreeTableView<Ds3TreeTableValue> getTreeTableView() {
         final VBox vbox = (VBox) ds3SessionTabPane.getSelectionModel().getSelectedItem().getContent();
 

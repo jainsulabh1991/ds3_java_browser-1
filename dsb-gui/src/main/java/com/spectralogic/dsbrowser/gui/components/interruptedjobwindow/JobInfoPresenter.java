@@ -9,7 +9,6 @@ import com.spectralogic.dsbrowser.gui.services.jobinterruption.FilesAndFolderMap
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.JobInterruptionStore;
 import com.spectralogic.dsbrowser.gui.services.settings.SettingsStore;
 import com.spectralogic.dsbrowser.gui.services.tasks.BackgroundTask;
-import com.spectralogic.dsbrowser.gui.services.tasks.RecoverInterruptedJob;
 import com.spectralogic.dsbrowser.gui.util.*;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -26,7 +25,10 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.TreeMap;
 
 
 public class JobInfoPresenter implements Initializable {
@@ -40,7 +42,7 @@ public class JobInfoPresenter implements Initializable {
     private TextField logSize;
 
     @FXML
-    private Button saveJobListButtons, cancelJobListButtons;
+    private Button cancelJobListButtons;
 
     @FXML
     private TreeTableColumn sizeColumn;
@@ -192,51 +194,6 @@ public class JobInfoPresenter implements Initializable {
         });
     }
 
-    public void saveJobFileDialog() {
-        if (CheckNetwork.isReachable(endpointInfo.getClient())) {
-            final Map<String, FilesAndFolderMap> jobIDMap = ParseJobInterruptionMap.getJobIDMap(jobInterruptionStore.getJobIdsModel().getEndpoints(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter().getJobProgressView(), null);
-            if (jobIDMap != null) {
-                jobIDMap.entrySet().forEach(i -> {
-                    try {
-                        final RecoverInterruptedJob recoverInterruptedJob = new RecoverInterruptedJob(UUID.fromString(i.getKey()), endpointInfo, jobInterruptionStore, settingsStore.getShowCachedJobSettings().getShowCachedJob());
-                        jobWorkers.execute(recoverInterruptedJob);
-                        final Map<String, FilesAndFolderMap> jobIDMapSec = ParseJobInterruptionMap.getJobIDMap(jobInterruptionStore.getJobIdsModel().getEndpoints(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter().getJobProgressView(), null);
-                        ParseJobInterruptionMap.setButtonAndCountNumber(jobIDMapSec, endpointInfo.getDeepStorageBrowserPresenter());
-                        refresh(jobListTreeTable, jobInterruptionStore, endpointInfo);
-                        recoverInterruptedJob.setOnSucceeded(event -> {
-                            refresh(jobListTreeTable, jobInterruptionStore, endpointInfo);
-                            RefreshCompleteViewWorker.refreshCompleteTreeTableView(ds3Common, workers);
-                        });
-                        recoverInterruptedJob.setOnFailed(event -> {
-                            endpointInfo.getDeepStorageBrowserPresenter().logText("Failed to recover " + i.getValue().getType() + " job " + endpointInfo.getEndpoint(), LogType.ERROR);
-                            refresh(jobListTreeTable, jobInterruptionStore, endpointInfo);
-                            RefreshCompleteViewWorker.refreshCompleteTreeTableView(ds3Common, workers);
-                        });
-                        recoverInterruptedJob.setOnCancelled(event -> {
-                            try {
-                                endpointInfo.getClient().cancelJobSpectraS3(new CancelJobSpectraS3Request(i.getKey()));
-                                endpointInfo.getDeepStorageBrowserPresenter().logText("Cancel job status : 200", LogType.SUCCESS);
-                                RefreshCompleteViewWorker.refreshCompleteTreeTableView(ds3Common, workers);
-                            } catch (final IOException e) {
-                                endpointInfo.getDeepStorageBrowserPresenter().logText("Failed to cancel job: " + e, LogType.ERROR);
-                            } finally {
-                                final Map<String, FilesAndFolderMap> jobIDMapSecond = ParseJobInterruptionMap.removeJobID(jobInterruptionStore, i.getKey(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter());
-                                ParseJobInterruptionMap.setButtonAndCountNumber(jobIDMapSecond, endpointInfo.getDeepStorageBrowserPresenter());
-                                RefreshCompleteViewWorker.refreshCompleteTreeTableView(ds3Common, workers);
-                            }
-                        });
-                    } catch (final Exception e) {
-                        LOG.error("Failed to save the job", e);
-                    }
-                });
-            }
-        } else {
-            BackgroundTask.dumpTheStack(resourceBundle.getString("host") + endpointInfo.getClient().getConnectionDetails().getEndpoint() + resourceBundle.getString(" unreachable"));
-            Ds3Alert.show(resourceBundle.getString("information"), resourceBundle.getString("host") + endpointInfo.getClient().getConnectionDetails().getEndpoint() + resourceBundle.getString(" unreachable"), Alert.AlertType.INFORMATION);
-            LOG.info("Network in unreachable");
-        }
-    }
-
     public void refresh(final TreeTableView<JobInfoModel> treeTableView, final JobInterruptionStore jobInterruptionStore, final EndpointInfo endpointInfo) {
         if (stage == null) {
             stage = (Stage) treeTableView.getScene().getWindow();
@@ -252,11 +209,11 @@ public class JobInfoPresenter implements Initializable {
             protected Optional<Object> call() throws Exception {
                 endpointInfo.getDeepStorageBrowserPresenter().logText("Loading interrupted jobs", LogType.INFO);
                 final Map<String, FilesAndFolderMap> jobIDMap = ParseJobInterruptionMap.getJobIDMap(jobInterruptionStore.getJobIdsModel().getEndpoints(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter().getJobProgressView(), null);
-                if (jobIDMap == null) {
+                if (jobIDMap != null) {
                     if (jobIDMap.size() == 0) {
                         Platform.runLater(() -> stage.close());
                     }
-                    jobIDMap.entrySet().stream().forEach(i -> {
+                    jobIDMap.entrySet().forEach(i -> {
                         final FilesAndFolderMap fileAndFolder = i.getValue();
                         final JobInfoModel jobModel = new JobInfoModel(fileAndFolder.getType(), i.getKey(), fileAndFolder.getDate(), fileAndFolder.getTotalJobSize(), i.getKey(), fileAndFolder.getType(), "Interrupted", JobInfoModel.Type.JOBID, fileAndFolder.getTargetLocation(), fileAndFolder.getBucket());
                         rootTreeItem.getChildren().add(new JobInfoListTreeTableItem(i.getKey(), jobModel, jobIDMap, endpointInfo.getDs3Common().getCurrentSession(), workers));

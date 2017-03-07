@@ -21,6 +21,7 @@ import com.spectralogic.dsbrowser.gui.services.sessionStore.Session;
 import com.spectralogic.dsbrowser.gui.services.settings.*;
 import com.spectralogic.dsbrowser.gui.services.tasks.CreateConnectionTask;
 import com.spectralogic.dsbrowser.gui.services.tasks.Ds3PutJob;
+import com.spectralogic.dsbrowser.util.GuavaCollectors;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -149,10 +150,10 @@ public class CloseConfirmationHandlerTest {
                 final Map<String, Map<String, FilesAndFolderMap>> endPointMap = new HashMap<>();
                 endPointMap.put(session.getEndpoint() + ":" + session.getPortNo(), jobIdMap);
 
-                final ArrayList<Map<String, Map<String, FilesAndFolderMap>>> endpointMapList = new ArrayList<>();
+                final List<Map<String, Map<String, FilesAndFolderMap>>> endpointMapList = new ArrayList<>();
                 endpointMapList.add(endPointMap);
 
-                final JobIdsModel jobIdsModel = new JobIdsModel(endpointMapList);
+                final JobIdsModel jobIdsModel = new JobIdsModel(endpointMapList.stream().collect(GuavaCollectors.immutableList()));
                 final JobInterruptionStore jobInterruptionStore = new JobInterruptionStore(jobIdsModel);
                 handler.saveInterruptionJobs(jobInterruptionStore);
                 //To get interrupted job from file

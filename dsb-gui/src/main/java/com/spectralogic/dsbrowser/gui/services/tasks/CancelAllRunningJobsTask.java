@@ -5,14 +5,17 @@ import com.spectralogic.ds3client.commands.spectrads3.CancelJobSpectraS3Request;
 import com.spectralogic.ds3client.utils.Guard;
 import com.spectralogic.dsbrowser.gui.services.JobWorkers;
 import com.spectralogic.dsbrowser.gui.services.jobinterruption.JobInterruptionStore;
+import com.spectralogic.dsbrowser.gui.util.Ds3Task;
 import com.spectralogic.dsbrowser.gui.util.ParseJobInterruptionMap;
 import com.spectralogic.dsbrowser.gui.util.StringConstants;
-import javafx.concurrent.Task;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 
-public class CancelAllRunningJobsTask extends Task {
+
+public class CancelAllRunningJobsTask extends Ds3Task {
     private final static Logger LOG = LoggerFactory.getLogger(CancelAllRunningJobsTask.class);
 
     private final JobWorkers jobWorkers;
@@ -38,7 +41,7 @@ public class CancelAllRunningJobsTask extends Task {
                             jobId = ds3PutJob.getJobId().toString();
                             ds3Client = ds3PutJob.getDs3Client();
                         }
-                        LOG.info("Cancelled job:{} " , ds3PutJob.getJobId());
+                        LOG.info("Cancelled job:{} ", ds3PutJob.getJobId());
                     } else if (job instanceof Ds3GetJob) {
                         final Ds3GetJob ds3GetJob = (Ds3GetJob) job;
                         ds3GetJob.cancel();
@@ -46,17 +49,33 @@ public class CancelAllRunningJobsTask extends Task {
                             jobId = ds3GetJob.getJobId().toString();
                             ds3Client = ds3GetJob.getDs3Client();
                         }
-                        LOG.info("Cancelled job:{} " , ds3GetJob.getJobId());
+                        LOG.info("Cancelled job:{} ", ds3GetJob.getJobId());
                     } else if (job instanceof RecoverInterruptedJob) {
                         final RecoverInterruptedJob recoverInterruptedJob = (RecoverInterruptedJob) job;
                         recoverInterruptedJob.cancel();
                         jobId = recoverInterruptedJob.getUuid().toString();
                         ds3Client = recoverInterruptedJob.getDs3Client();
-                        LOG.info("Cancelled job:{} " , recoverInterruptedJob.getUuid());
+                        LOG.info("Cancelled job:{} ", recoverInterruptedJob.getUuid());
                     }
-                    ParseJobInterruptionMap.removeJobID(jobInterruptionStore, jobId, ds3Client.getConnectionDetails()
-                            .getEndpoint(), null);
-                    ds3Client.cancelJobSpectraS3(new CancelJobSpectraS3Request(jobId));
+
+                    final Ds3Client finalDs3Client = ds3Client;
+                    final String finalJobId = jobId;
+
+                    //Platform.runLater() is required to get job progress status. It will run on UI thread only.
+                    Platform.runLater(() -> {
+                        if (null != finalDs3Client && null != finalJobId) {
+                            try {
+                                if (job.getProgress() != 1) {
+                                    finalDs3Client.cancelJobSpectraS3(new CancelJobSpectraS3Request(finalJobId));
+                                }
+                            } catch (final IOException e) {
+                                e.printStackTrace();
+                            }
+                            ParseJobInterruptionMap.removeJobID(jobInterruptionStore, finalJobId, finalDs3Client.getConnectionDetails()
+                                    .getEndpoint(), null);
+                        }
+                        succeeded();
+                    });
                 } catch (final Exception e1) {
                     LOG.error("Failed to cancel job", e1);
                 }
@@ -66,6 +85,4 @@ public class CancelAllRunningJobsTask extends Task {
         }
         return null;
     }
-
-
 }

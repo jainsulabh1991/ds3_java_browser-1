@@ -19,7 +19,6 @@ import javafx.scene.layout.HBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
@@ -38,11 +37,11 @@ public class ButtonCell extends TreeTableCell<JobInfoModel, Boolean> {
                 endpointInfo.getDeepStorageBrowserPresenter().logText(resourceBundle.getString("initiatingRecovery"), LogType.INFO);
                 final String uuid = getTreeTableRow().getTreeItem().getValue().getJobId();
                 final FilesAndFolderMap filesAndFolderMap = endpointInfo.getJobIdAndFilesFoldersMap().get(uuid);
-                final RecoverInterruptedJob recoverInterruptedJob = new RecoverInterruptedJob(UUID.fromString(uuid), endpointInfo, jobInterruptionStore, settingsStore.getShowCachedJobSettings().getShowCachedJob());
+                final RecoverInterruptedJob recoverInterruptedJob = new RecoverInterruptedJob(
+                        UUID.fromString(uuid), endpointInfo, jobInterruptionStore,
+                        settingsStore.getShowCachedJobSettings().getShowCachedJob(), jobInfoPresenter, getTreeTableView());
                 jobWorkers.execute(recoverInterruptedJob);
-                final Map<String, FilesAndFolderMap> jobIDMap = ParseJobInterruptionMap.getJobIDMap(jobInterruptionStore.getJobIdsModel().getEndpoints(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter().getJobProgressView(), null);
-                ParseJobInterruptionMap.setButtonAndCountNumber(jobIDMap, endpointInfo.getDeepStorageBrowserPresenter());
-                jobInfoPresenter.refresh(getTreeTableView(), jobInterruptionStore, endpointInfo);
+
                 recoverInterruptedJob.setOnSucceeded(event -> {
                     RefreshCompleteViewWorker.refreshCompleteTreeTableView(endpointInfo.getDs3Common(), workers);
                     jobInfoPresenter.refresh(getTreeTableView(), jobInterruptionStore, endpointInfo);
