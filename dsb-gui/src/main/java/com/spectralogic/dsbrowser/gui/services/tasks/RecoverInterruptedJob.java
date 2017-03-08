@@ -94,7 +94,7 @@ public class RecoverInterruptedJob extends Ds3JobTask {
 
                 getJob(filesAndFolderMap);
 
-                updateJobInfoPopup();
+                updateJobInfoPopup(false);
 
                 final AtomicLong totalSent = addDataTransferListener(totalJobSize);
 
@@ -183,7 +183,7 @@ public class RecoverInterruptedJob extends Ds3JobTask {
             endpointInfo.getDeepStorageBrowserPresenter().logText(
                     resourceBundle.getString("jobNotFound"), LogType.INFO);
             cancel();
-            updateJobInfoPopup();
+            updateJobInfoPopup(false);
         } catch (final JobRecoveryNotActiveException e) {
             LOG.error("Encountered an exception when recovering the job:{} ", e);
             final CountDownLatch latch = new CountDownLatch(1);
@@ -194,14 +194,14 @@ public class RecoverInterruptedJob extends Ds3JobTask {
             });
             latch.await();
             cancel();
-            updateJobInfoPopup();
+            updateJobInfoPopup(true);
         } catch (final Exception e) {
             isJobFailed = true;
             LOG.error("Encountered an exception when executing a job", e);
             endpointInfo.getDeepStorageBrowserPresenter().logText(
                     resourceBundle.getString("encounteredException") + e
                             + resourceBundle.getString("userInterruption"), LogType.ERROR);
-            updateJobInfoPopup();
+            updateJobInfoPopup(false);
         }
     }
 
@@ -248,9 +248,16 @@ public class RecoverInterruptedJob extends Ds3JobTask {
     /**
      * Update the popup UI with currently interrupted jobs.
      */
-    private void updateJobInfoPopup() {
+    private void updateJobInfoPopup(final boolean isRemove) {
         Platform.runLater(() -> {
-            final Map<String, FilesAndFolderMap> jobIDMap = ParseJobInterruptionMap.getJobIDMap(jobInterruptionStore.getJobIdsModel().getEndpoints(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter().getJobProgressView(), null);
+            Map<String, FilesAndFolderMap> jobIDMap = null;
+            if (isRemove) {
+                jobIDMap = ParseJobInterruptionMap.removeJobID(jobInterruptionStore,
+                        uuid.toString(), endpointInfo.getEndpoint(), endpointInfo.getDeepStorageBrowserPresenter());
+            } else {
+                jobIDMap = ParseJobInterruptionMap.getJobIDMap(jobInterruptionStore.getJobIdsModel().getEndpoints(), endpointInfo.getEndpoint(),
+                        endpointInfo.getDeepStorageBrowserPresenter().getJobProgressView(), null);
+            }
             ParseJobInterruptionMap.setButtonAndCountNumber(jobIDMap, endpointInfo.getDeepStorageBrowserPresenter());
             if (null != jobInfoPresenter && null != treeTableView) {
                 jobInfoPresenter.refresh(treeTableView, jobInterruptionStore, endpointInfo);

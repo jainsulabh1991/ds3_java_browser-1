@@ -36,7 +36,6 @@ public class CancelAllRunningJobsTask extends Ds3Task {
                     Ds3Client ds3Client = null;
                     if (job instanceof Ds3PutJob) {
                         final Ds3PutJob ds3PutJob = (Ds3PutJob) job;
-                        ds3PutJob.cancel();
                         if (ds3PutJob.getJobId() != null) {
                             jobId = ds3PutJob.getJobId().toString();
                             ds3Client = ds3PutJob.getDs3Client();
@@ -44,7 +43,6 @@ public class CancelAllRunningJobsTask extends Ds3Task {
                         LOG.info("Cancelled job:{} ", ds3PutJob.getJobId());
                     } else if (job instanceof Ds3GetJob) {
                         final Ds3GetJob ds3GetJob = (Ds3GetJob) job;
-                        ds3GetJob.cancel();
                         if (ds3GetJob.getJobId() != null) {
                             jobId = ds3GetJob.getJobId().toString();
                             ds3Client = ds3GetJob.getDs3Client();
@@ -52,7 +50,6 @@ public class CancelAllRunningJobsTask extends Ds3Task {
                         LOG.info("Cancelled job:{} ", ds3GetJob.getJobId());
                     } else if (job instanceof RecoverInterruptedJob) {
                         final RecoverInterruptedJob recoverInterruptedJob = (RecoverInterruptedJob) job;
-                        recoverInterruptedJob.cancel();
                         jobId = recoverInterruptedJob.getUuid().toString();
                         ds3Client = recoverInterruptedJob.getDs3Client();
                         LOG.info("Cancelled job:{} ", recoverInterruptedJob.getUuid());
@@ -63,9 +60,10 @@ public class CancelAllRunningJobsTask extends Ds3Task {
 
                     //Platform.runLater() is required to get job progress status. It will run on UI thread only.
                     Platform.runLater(() -> {
-                        if (null != finalDs3Client && null != finalJobId) {
+                        if (null != finalDs3Client && !Guard.isStringNullOrEmpty(finalJobId)) {
                             try {
                                 if (job.getProgress() != 1) {
+                                    job.cancel();
                                     finalDs3Client.cancelJobSpectraS3(new CancelJobSpectraS3Request(finalJobId));
                                 }
                             } catch (final IOException e) {
